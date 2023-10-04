@@ -1,0 +1,74 @@
+library(lme4) # This is the package that we need for using LMMs
+
+
+# First, specify the path to the datafile:
+setwd('C:\\Users\\andre\\Desktop\\CogSyHomework\\Ass3')
+data <- read.csv('workshop_data.txt')
+
+
+
+# We first remove the outliers
+outlier1 <- mean(data$RT) + 2.5 * sd(data$RT)
+outlier2 <- mean(data$RT) - 2.5 * sd(data$RT)
+data <- data[data$RT > outlier2,]
+data <- data[data$RT < outlier1,]
+
+# Then we create a separate dataset for testing RTs, since we want incorrect answers totest accuracies
+datart <- data[data$error == 0,]
+
+# We may have factors that we want to specify as such. In the matrix, our IV
+data$session <- as.factor(data$session)
+data$distractor <- factor(data$distractor,
+labels=c("no","yes"))
+
+datart$session <- as.factor(datart$session)
+datart$distractor <- factor(datart$distractor,
+                          labels=c("no","yes"))
+# We can choose reference levels for our factors of interest. 
+data$distractor <- relevel(data$distractor, ref="no")
+data$session <- relevel(data$session, ref="control")
+
+datart$distractor <- relevel(datart$distractor, ref="no")
+datart$session <- relevel(datart$session, ref="control")
+
+# Here is the code for running a very simple LMM with distractor as fixed effect,
+# and by-subject and by-item intercepts as random effect
+
+model1 <- lmer(
+    RT ~ distractor * trialnr_session + (1 + distractor + session|subject)+(1|item) + (1|age),
+    data=datart, )
+
+model2 <- lmer(
+  error ~ distractor * trialnr_session + (1 + distractor + session|subject)+(1|item) + (1|age),
+  data=data, )
+
+model3 <- lmer(
+  RT ~ distractor * trialnr_session + (1|subject)+(1|item) + (1|age),
+  data=datart, )
+
+model4 <- lmer(
+  error ~ distractor * trialnr_session + (1|subject)+(1|item) + (1|age),
+  data=data, )
+
+#Final Models
+model5 <- lmer(
+  RT ~ session * distractor + (1 + distractor + age + trialnr_session|subject)+(1|item) + (1|age) + (1|trialnr_session)+ (1|trialnr_total),
+  data=datart, )
+
+model6 <- lmer(
+  error ~ session * distractor + (1 + distractor +age +trialnr_session|subject)+(1|item) + (1|age) + (1|trialnr_session)+ (1|trialnr_total),
+  data=data, )
+
+
+# To read out the results, request a summary of the model
+summary(model1)
+summary(model2)
+summary(model3)
+summary(model4)
+summary(model5)
+summary(model6)
+
+#likelihood
+anova(model1, model3)
+
+
